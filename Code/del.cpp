@@ -187,9 +187,11 @@ void DeleteEdge(edge* e)
 edge* Connect(edge* a, edge* b)
 {
 	edge* e = MakeEdge();
+	e -> changeorg(a -> Dest());
+	e -> changedest(b -> Org());
 	Splice(e, a-> Lnext());
 	Splice(e->Sym(), b);
-	e-> EndPoints(a->Dest(), b-> Org());
+	//e-> EndPoints(a->Dest(), b-> Org());
 	return e;
 }
 
@@ -201,7 +203,9 @@ void Swap(edge* e)
 	Splice(e->Sym(), b);
 	Splice(e, a->Lnext());
 	Splice(e->Sym(), b->Lnext());
-	e->EndPoints(a->Dest(), b->Dest());
+	//e->EndPoints(a->Dest(), b->Dest());
+	e -> changeorg(a -> Dest());
+	e -> changedest(b ->Dest());
 }
 
 bool RightOf(point* p, edge* e)
@@ -236,25 +240,49 @@ void printep(edgepair ep)
  	double x4 = (ep.re -> Org() -> coor)[0];
  	double y4 = (ep.re -> Org() -> coor)[1];
 
- 	cout << x1 << " " << y1 << endl;
- 	cout << x2 << " " << y2 << endl;
- 	cout << x3 << " " << y3 << endl;
- 	cout << x4 << " " << y4 << endl;
+ 	cout << x1 << " " << y1 << " to " << x2 << " " << y2 << endl;
+ 	cout << x3 << " " << y3 << " to " << x4 << " " << y4 << endl;
+ 	
 }
 
+void printedge(edge* e)
+{
+	double x1 = (e -> Dest() -> coor)[0];
+	double y1 = (e -> Dest() -> coor)[1];
+	double x2 = (e -> Org() -> coor)[0];
+ 	double y2 = (e -> Org() -> coor)[1];
+ 	cout << x1 << " " << y1 << " to " << x2 << " " << y2 << endl;
+}
+
+void printpoints(vector<point> &s)
+{
+	cout << "Points In Order" << endl;
+	for(int i=0; i< s.size(); i++)
+	{	
+		double x = ((s[i].coor)[0]);
+		double y = ((s[i].coor)[1]);
+		cout << x << " " << y << endl;
+	}
+
+
+}
+
+
+//--------------------------------- entire delaunay program
 edgepair delaunay(vector<point> &s, int begin, int end) //begin = 0, end = length -1
 {
 
 if ( (end - begin +1) == 2 )
 {
 edge* a = MakeEdge();
-a->changeorg(&s[0]);
-a->changedest(&s[1]); 
+a->changeorg(&s[begin]);
+a->changedest(&s[begin+1]); 
 edgepair ep;
 ep.le = a;
 ep.re = a->Sym();
 //------------------print
-//printep(ep);
+printedge(a);
+//------------------print
 return ep;
 }//-----------end of if size = 2
 else if((end - begin +1) == 3)
@@ -262,12 +290,18 @@ else if((end - begin +1) == 3)
 	edge* a = MakeEdge(); 
 	edge* b = MakeEdge();
 	Splice(a->Sym(), b);
-	a->changeorg(&s[0]); //a,Org <- s1
-	a->changedest(&s[1]); //a.Dest <--b.Org <--- s2;s
-	b->changeorg(&s[1]);
-	b->changedest(&s[2]);
+	a->changeorg(&s[begin]); //a,Org <- s1
+	a->changedest(&s[begin+1]); //a.Dest <--b.Org <--- s2;s
+	b->changeorg(&s[begin+1]);
+	b->changedest(&s[begin+2]);
+
+	//------------------------------print
+	printedge(a);
+	printedge(b);
+	//------------------------------print
+
 //--------[Now Close the Triangle]--
-	if(orient2dexact(s[0].coor, s[1].coor, s[2].coor) >0)
+	if(orient2dexact(s[begin].coor, s[begin+1].coor, s[begin+2].coor) >0)
 	{
 		edge* c = Connect(b,a);
 		edgepair ep; 
@@ -275,17 +309,21 @@ else if((end - begin +1) == 3)
 		ep.re = b -> Sym();
 
 		//---------print
-		//printep(ep);
+		printedge(c);
+		//---------print
+		
 		return ep;
 	}
-	else if(orient2dexact(s[0].coor, s[2].coor, s[1].coor) >0)
+	else if(orient2dexact(s[begin].coor, s[begin+2].coor, s[begin+1].coor) >0)
 	{
 		edge* c = Connect(b,a);
 		edgepair ep;
 		ep.le = c->Sym();
 		ep.re = c;
 		//-----------------------------
-		//printep(ep);
+		printedge(c);
+
+		//-----------------------------
 		return ep;
 	}
 	else
@@ -293,7 +331,7 @@ else if((end - begin +1) == 3)
 		ep.le = a;
 		ep.re = b->Sym();
 		//-----------------
-		//printep(ep);
+		
 		return ep;
 
 	} //---- three points are collinear
@@ -315,7 +353,11 @@ else //|S| >= 4--------------------
 	{
 		// exit IF---
 	}
-	edge* base1 = Connect(epl.le -> Sym(), epl.re);
+	edge* base1 = Connect(epr.le -> Sym(), epl.re);
+
+	//--------------------------------
+	printedge(base1);
+	//--------------------------------
 	if(epl.re -> Org() == epl.le -> Org())
 	{
 		epl.le = base1 ->Sym();
@@ -351,20 +393,27 @@ else //|S| >= 4--------------------
 	{
 		//exit FI
 	}
-	if ( !Valid(rcand, base1) and incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0)
+	if ( !Valid(lcand, base1) or (!Valid(rcand, base1) and incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
 	{
 		base1 = Connect(rcand, base1 -> Sym());
+
+		//----------------------------------
+		printedge(base1);
+		//----------------------------------
 	}
 	else
 	{
 		base1 = Connect(base1 -> Sym(), lcand ->Sym());
+		//-----------------------------------
+		printedge(base1);
+		//-------------------------------------
 	}
 	//OD 
 	edgepair output;
 	output.le = epl.le;
 	output.re = epr.re;
 	//------------------------------
-	//printep(output);
+	printep(output);
 	return output;
 } //---end of |S| >=4
 
@@ -406,6 +455,9 @@ else
 	}
 
 sort(s.begin(), s.end());
+printpoints(s);
+
+
 edgepair eppp = delaunay(s, 0, s.size()-1);
 
 
