@@ -1,0 +1,263 @@
+
+<!-- saved from url=(0054)https://people.eecs.berkeley.edu/~jrs/274s17/proj.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>Delaunay Triangulation Project</title>
+</head>
+<body bgcolor="ffffff">
+
+<font size="6" color="009000">
+<a href="https://people.eecs.berkeley.edu/~jrs/274s17/">
+CS 274:  Computational Geometry</a> <small>(Spring 2017)</small><br>
+Delaunay Triangulation Project
+</font>
+<p>
+
+<b>Due 2:40 pm, April 24, 2017<br>
+20% of final grade</b>
+</p><p>
+
+Implement <i>either</i> two divide-and-conquer algorithms <i>or</i>
+two incremental insertion algorithms
+for constructing two-dimensional Delaunay triangulations, described by
+<a href="http://portal.acm.org/citation.cfm?doid=282918.282923">
+Leonidas J. Guibas and Jorge Stolfi,
+<i>Primitives for the Manipulation of General Subdivisions and
+the Computation of Voronoi Diagrams</i></a>,
+ACM Transactions on Graphics <b>4</b>(2):74–123, April 1985.
+Feel free to skip Section 3, but read the rest of the paper.
+See also <a href="https://people.eecs.berkeley.edu/~jrs/meshpapers/GSflaws">
+this list of errors in the Guibas and Stolfi paper</a>, and
+Paul Heckbert,
+<a href="https://people.eecs.berkeley.edu/~jrs/meshpapers/Heckbert.ps.gz">
+<i>Very Brief Note on Point Location in Triangulations</i></a>,
+December 1994.
+(The problem Paul points out can't happen in a Delaunay triangulation,
+but it's a warning in case you're ever tempted
+to use the Guibas and Stolfi walking-search subroutine
+in a non-Delaunay triangulation.)
+</p><p>
+
+Your implementations must use Guibas and Stolfi's quad-edge data structure
+(with appropriate simplifications, if you wish).
+You are responsible for reading and understanding the Guibas and Stolfi paper,
+except Section 3, which may be safely skipped.
+It's a long paper, so start early.
+</p><p>
+
+The purpose of this project is to burn an understanding of
+Delaunay triangulations and planar subdivision data structures into your brain.
+</p><p>
+
+Which of the two options should you choose?
+Well, the divide-and-conquer algorithm is faster,
+and will satisfy you better if you're a speed junkie.
+The incremental algorithm is more flexible because it's incremental,
+and therefore can be used in an on-line manner by mesh generators and
+other algorithms that choose vertices based on the state of the triangulation.
+I think the difficulty of the two implementations is equal.
+(Guibas and Stolfi's divide-and-conquer pseudocode is substantially
+more complicated than their incremental pseudocode, but the extra stuff you
+must devise yourself is more complicated for the incremental algorithm
+than for the divide-and-conquer algorithm.)
+
+</p><h3>Option 1:  Divide-and-conquer algorithm</h3>
+Implement the divide-and-conquer algorithm for which Guibas and Stolfi give
+pseudocode.
+<p>
+
+Next, implement a second version of the divide-and-conquer algorithm whose
+recursion alternates between using
+horizontal cuts (at even depths of the recursion tree)
+and vertical cuts (at odd depths) to divide the points into two subsets.
+In other words, you bisect the entire set of points by <i>x</i>-coordinate,
+then bisect each half-set by <i>y</i>-coordinate,
+then bisect each quarter-set by <i>x</i>-coordinate, and so on,
+alternating between directions.
+(This alternation is motivated by a paper by Rex Dwyer.)
+The original algorithm of Lee and Schachter (discussed by Guibas and Stolfi)
+uses vertical cuts only.
+</p><p>
+
+To bisect the sets quickly, I suggest using the standard O(<i>n</i>)-time
+quickselect median-finding/partitioning algorithm.
+It's not a good idea to fully sort the points at every level of the recursion,
+because if you do, you'll have a &#920;(<i>n</i> log<sup>2</sup> <i>n</i>)
+Delaunay triangulation algorithm, which defeats the speed advantage of
+alternating cuts.
+</p><p>
+
+You should find that you can use the same code to merge hulls regardless of
+whether the cuts are vertical or horizontal, but before/after you merge,
+you'll need to readjust the positions of the convex hull “handles”
+called <tt>ldi</tt>, <tt>rdi</tt>, <tt>ldo</tt>, and <tt>rdo</tt> in
+the Guibas–Stolfi paper.
+
+</p><h3>Option 2:  Incremental insertion algorithms</h3>
+Implement the incremental insertion algorithm for which
+Guibas and Stolfi give pseudocode.
+Use their suboptimal “walking” method for point location.
+<p>
+
+Next, implement fast point location,
+based on either conflict lists or a history dag (whichever you prefer).
+Since you are using an edge-based data structure,
+rather than a triangle-based data structure,
+you will need to modify the point location data structure slightly.
+</p><p>
+
+Each quad-edge has four <b>Data</b> fields.
+Two of these are used to reference the vertices of the quad-edge.
+For point location based on conflict lists,
+the other two <b>Data</b> fields may be used to reference
+the lists of uninserted vertices
+associated with the triangles on each side of the edge.
+For point location based on a history dag,
+the other two <b>Data</b> fields may be used to reference
+the leaves of the dag
+associated with the triangles on each side of the edge.
+</p><p>
+
+For conflict lists,
+each uninserted vertex should maintain a reference to an oriented edge
+of the triangle that contains the uninserted vertex.
+For a history dag,
+each leaf of the dag should maintain a reference to an oriented edge
+of the triangle that the leaf represents.
+</p><p>
+
+</p><h3>Language</h3>
+If you write in any language other than C, C++, or Java,
+you are required to give me <i>very</i> complete instructions on how to
+compile and run your code.
+You may also be required to help me get access to a compiler, or
+to obtain for me an account with which I can run your code.
+If your submission does not run under Unix, I may need even more help.
+(On my desk next to my Linux machine, I do have a Windows machine, but
+I don't know a thing about how to compile code with it.
+I don't even think it has a C compiler installed.)
+<p>
+
+</p><h3>Interface</h3>
+Your program should use the same file formats as the program
+<a href="http://www.cs.cmu.edu/~quake/triangle.html">Triangle</a>.
+Specifically, it should read a file with the suffix
+<a href="http://www.cs.cmu.edu/~quake/triangle.node.html">.node</a>,
+and write a file with the suffix
+<a href="http://www.cs.cmu.edu/~quake/triangle.ele.html">.ele</a>.
+<p>
+
+An advantage of using these file formats is that I provide test data.
+</p><ul>
+<li>
+Here are the timing files (GNUzip-compressed):
+<a href="https://people.eecs.berkeley.edu/~jrs/input/ttimeu10000.node.gz">ttimeu10000.node.gz</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/ttimeu100000.node.gz">ttimeu100000.node.gz</a>, and
+<a href="https://people.eecs.berkeley.edu/~jrs/input/ttimeu1000000.node.gz">ttimeu1000000.node.gz</a>.
+</li><li>
+Here are some smaller test files for your pleasure (not compressed):
+<a href="https://people.eecs.berkeley.edu/~jrs/input/tri.node">tri.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/4.node">4.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/box.node">box.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/spiral.node">spiral.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/flag.node">flag.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/grid.node">grid.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/dots.node">dots.node</a>,
+<a href="https://people.eecs.berkeley.edu/~jrs/input/ladder.node">ladder.node</a>, and
+<a href="https://people.eecs.berkeley.edu/~jrs/input/633.node">633.node</a>.
+</li></ul>
+
+Another advantage is that you (and I) can use my
+Show Me visualization program (included in the
+<a href="http://www.cs.cmu.edu/~quake/triangle.html">Triangle distribution</a>)
+to view and print your input and output.
+You can also use Triangle to check if you're producing correct triangulations.
+(Note that Triangle uses a triangle-based data structure instead of quad-edges,
+and its code will probably not be as helpful to you
+as Guibas and Stolfi's pseudocode
+in producing your quad-edge-based implementation.)
+<p>
+
+You should provide command-line switches, an input prompt,
+or some other easy way to choose among the options.
+For the divide-and-conquer algorithm, these options are
+alternating cuts versus vertical cuts only.
+For the incrmental algorithm, the options should include
+slow “walking point location” versus fast point location;
+and randomized insertion versus non-randomized insertion.
+Randomized insertion should select
+a permutation uniformly from all possible permutations.
+Non-randomized insertion should
+insert vertices in the order in which they appear in the input.
+</p><p>
+
+</p><h3>Geometric predicates</h3>
+Insofar as possible, your algorithms should make all their arithmetic decisions
+based on the results of InCircle and CCW (aka Orient2D) predicates.
+Rather than writing your own, I suggest you download and blindly use
+<a href="http://www.cs.cmu.edu/~quake/robust.html">
+my robust predicates for floating-point inputs</a>.
+<p>
+
+</p><h3>Borrowed code</h3>
+You are welcome to use publicly available libraries or implementations of
+the following, so long as none of them was produced by any of your classmates:
+sorting, selection (aka median finding or partitioning), trees,
+other fundamental non-geometric data structures,
+command-line switch processing, file reading/writing,
+and geometric primitives like the InCircle and CCW predicates.
+You must write the quad-edge implementation and geometric algorithms all
+by yourself.
+<p>
+
+</p><h3>Your submission</h3>
+Send me an email with your submission attached as a tar or zip file.
+If your code doesn't run under Unix,
+special arrangements might need to be made.
+<p>
+
+You should also submit a report (on paper) that includes the following:
+</p><ul>
+<li>
+Instructions for compiling and running your code.  If you use C/C++ and Unix,
+  relatively rudimentary instructions will probably do.
+  Be sure to document how to specify the input file, and how to choose
+  between different algorithms.
+</li><li>
+A table containing timings for each of your algorithms or
+  point location methods on
+  random points sets (top of this page) of 10,000, 100,000, and
+  1,000,000 points.
+  (If the “walking” method of point location takes
+  longer than thirty minutes on large point sets,
+  just note that you couldn't wait for it to terminate.)
+  Time only the randomized versions of the incremental insertion algorithm.
+  Try to exclude all file I/O from your timings if possible.
+  (If using a timer within your program isn't possible,
+  the Unix <b>time</b> command will do, although file I/O time will be
+  included.)
+  Why do you think the fastest algorithm is fastest?
+</li><li>
+For the divide-and-conquer algorithm only:
+  Can you create a point set for which the vertical cuts algorithm is
+  notably faster than the alternating cuts algorithm?
+  What do you think accounts for the discrepancy?
+</li><li>
+For the incremental algorithm only:
+  create an orderly point set, like a square grid whose vertices are given
+  in a structured order.  Does failing to randomize the order of the
+  vertices significantly change the running time of
+  the incremental insertion algorithm with the fast point location method?
+</li><li>
+If you borrowed any code, please give full credit.
+</li></ul>
+
+
+
+<hr>
+
+<address>
+<a href="https://people.eecs.berkeley.edu/~jrs/"><img src="./Delaunay Triangulation Project_files/sig.gif" border="0" width="151" height="21"></a>
+</address>
+
+
+</body></html>

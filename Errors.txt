@@ -1,0 +1,41 @@
+Three fixes to Guibas and Stolfi's "Primitives for the Manipulation of
+General Subdivisions and the Computation of Voronoi Diagrams":
+
+One, their Locate primitive always works in the interior of the mesh,
+but can get stuck in an infinite loop on the convex hull.  Consider
+this mesh:
+                               y       z
+                               o-------o
+                              / \     / \
+                             /   \   /   \
+                            /     \ /     \
+                           o--X----o-------o
+                           u       v       w
+
+Suppose you're trying to locate the X, which is collinear with uvw.
+Look at p. 121 of Guibas & Stolfi.  You are searching with an edge
+e for the edge uv.  Suppose that e := wv (directed toward v).
+RightOf[X, e] is false.  NOT RightOf[X, e.Onext] is true, so we
+execute "e <- e.Onext", which sets e to wz.  On the next iteration,
+we execute "e <- e.Onext", which sets e back to wv.  This continues
+forever, an infinite loop.
+
+To fix this bug, changing both "Not RightOf" expressions to "LeftOf"
+expressions is a good start, but doesn't fulfill the criterion that
+"Locate returns an edge e of the current Delaunay diagram such that
+the given point X is either on e or _strictly_ inside the left face
+of e."  Rather, X might be on any edge of the left face; X might
+even be the apex vertex.  An explicit test for these possibilities
+is necessary.
+
+Two, I think there are other places in the paper where Guibas &
+Stolfi sometime use RightOf when they mean NOT LeftOf, and vice
+versa.  Give careful consideration in each case to what should
+happen when the determinant is zero.
+
+Three, on p. 120, in their InsertSite procedure, the fifth-last line
+is wrong.  The statement "e <- t" should read "e <- e.Oprev".
+
+If you're not using exact arithmetic for the CCW and InCircle tests,
+other things can go wrong as well.  Some problem cases can be
+avoided by changing the code a bit, and some can't.
