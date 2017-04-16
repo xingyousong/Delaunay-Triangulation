@@ -101,20 +101,20 @@ edge* edge::Onext()
 }
 edge* edge::Oprev()
 {
-	return Rot() -> Onext() -> Rot();
+	return (Rot() -> Onext()) -> Rot();
 }
 
 edge* edge::Dnext()
 {
-	return Sym() -> Onext() -> Sym();
+	return (Sym() -> Onext()) -> Sym();
 }
 edge* edge::Dprev()
 {
-	return invRot() -> Onext() -> invRot();
+	return (invRot() -> Onext()) -> invRot();
 }
 edge* edge::Lnext()
 {
-	return invRot() -> Onext() -> Rot();
+	return (invRot() -> Onext()) -> Rot();
 }
 edge* edge::Lprev()
 {
@@ -122,7 +122,7 @@ edge* edge::Lprev()
 }
 edge* edge::Rnext()
 {
-	return Rot() -> Onext() -> invRot();
+	return (Rot() -> Onext()) -> invRot();
 }
 edge* edge::Rprev()
 {
@@ -132,7 +132,7 @@ edge* edge::Rprev()
 void edge::EndPoints(point* origin, point* de)
 {
 	data = origin;
-	Sym() -> data = de;
+	(Sym() -> data) = de;
 }
 
 point* edge::Org()
@@ -151,8 +151,25 @@ void edge::changeorg(point* p)
 
 void edge::changedest(point* p)
 {
-	Sym() -> data = p;
+	(Sym() -> data) = p;
 }
+
+//------------------------------ end of edge class -------------------------------
+/*
+class Subdivision
+{
+public:
+	edge* MakeEdge();
+	void Splict(edge*, edge*);
+	void DeleteEdge(edge*);
+	edge* Connect(edge*, edge*);
+	unordered_map<int, QuadEdge*> record; 
+
+};
+)
+*/
+//----------------------------subdivision to keep track ------------------------
+
 
 edge* MakeEdge()
 {
@@ -162,8 +179,8 @@ edge* MakeEdge()
 
 void Splice(edge* a, edge* b)
 {
-	edge* alpha = a->Onext() -> Rot();
-	edge* beta = b->Onext() -> Rot();
+	edge* alpha = (a->Onext()) -> Rot();
+	edge* beta = (b->Onext()) -> Rot();
 
 	edge* t1 = b->Onext();
 	edge* t2 = a-> Onext();
@@ -178,7 +195,7 @@ void Splice(edge* a, edge* b)
 void DeleteEdge(edge* e)
 {
 	Splice(e, e->Oprev());
-	Splice(e->Sym(), e-> Sym()->Oprev());
+	Splice(e->Sym(), (e-> Sym())->Oprev());
 	delete e-> Qedge();
 }
 
@@ -195,7 +212,7 @@ edge* Connect(edge* a, edge* b)
 	return e;
 }
 
-void Swap(edge* e)
+void Swap(edge* e) // I never used this function 
 {
 	edge* a = e->Oprev();
 	edge* b = e-> Sym() -> Oprev();
@@ -217,7 +234,8 @@ bool LeftOf(point* p, edge* e)
 	return (orient2dexact(p->coor, e->Org()->coor, e->Dest()-> coor) > 0);
 }
 
-bool Valid(edge* e, edge* base1){
+bool Valid(edge* e, edge* base1)
+{
 	return RightOf(e->Dest(), base1);
 } 
 
@@ -242,8 +260,7 @@ void printep(edgepair ep)
 
  	cout << x1 << " " << y1 << " to " << x2 << " " << y2 << endl;
  	cout << x3 << " " << y3 << " to " << x4 << " " << y4 << endl;
- 	
-}
+ }
 
 void printedge(edge* e)
 {
@@ -263,8 +280,6 @@ void printpoints(vector<point> &s)
 		double y = ((s[i].coor)[1]);
 		cout << x << " " << y << endl;
 	}
-
-
 }
 
 
@@ -291,8 +306,14 @@ else if((end - begin +1) == 3)
 	edge* b = MakeEdge();
 	Splice(a->Sym(), b);
 	a->changeorg(&s[begin]); //a,Org <- s1
-	a->changedest(&s[begin+1]); //a.Dest <--b.Org <--- s2;s
 	b->changeorg(&s[begin+1]);
+	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
+	
+	//----test
+
+	//-----test
+
+
 	b->changedest(&s[begin+2]);
 
 	//------------------------------print
@@ -341,38 +362,42 @@ else //|S| >= 4--------------------
 	//[rdi, rdo] = [epr.le, epr.re]
 	edgepair epl = delaunay(s, 0, end/2);
 	edgepair epr = delaunay(s, end/2+1, end);
-	if(LeftOf(epr.le ->Org(), epl.re)) //LeftOf[rdi.Org, ldi]
+
+	edge* ldo = epl.le;
+	edge* ldi = epl.re;
+	edge* rdi = epr.le; 
+	edge* rdo = epr.re; 
+	while(true)
 	{
-		epl.re = epl.re->Lnext();
+
+		if(LeftOf(rdi ->Org(), ldi)) //LeftOf[rdi.Org, ldi]
+		{
+			ldi = ldi->Lnext();
+		}
+		else if (RightOf(ldi -> Org(), rdi))
+		{
+			rdi = rdi -> Rprev();
+		}
+		else
+		{	
+			break;
+		}
 	}
-	else if (RightOf(epl.re -> Org(), epr.le))
-	{
-		epl.le = epl.le -> Rprev();
-	}
-	else
-	{
-		// exit IF---
-	}
-	edge* base1 = Connect(epr.le -> Sym(), epl.re);
+	edge* base1 = Connect(rdi -> Sym(), ldi);
 
 	//--------------------------------
 	printedge(base1);
 	//--------------------------------
-	if(epl.re -> Org() == epl.le -> Org())
-	{
-		epl.le = base1 ->Sym();
-	}
-	if(epr.le -> Org() == epr.re->Org())
-	{
-		epr.re = base1;
-	}
+	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
+	if( (rdi -> Org()) == (rdo->Org())) {rdo = base1;}
 
-
+while(true)
+{
 //DO this is the merge loop
-	edge* lcand = base1 -> Sym() -> Onext();
+	edge* lcand = (base1 -> Sym()) -> Onext();
 	if(Valid(lcand, base1))
 	{
-		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, lcand ->Onext() -> Dest() -> coor  )  > 0 )
+		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, (lcand ->Onext()) -> Dest() -> coor  )  > 0 )
 		{
 			edge* t = lcand -> Onext();
 			DeleteEdge(lcand);
@@ -391,7 +416,7 @@ else //|S| >= 4--------------------
 	}
 	if (!Valid(lcand, base1) and !Valid(rcand, base1))
 	{
-		//exit FI
+		break;
 	}
 	if ( !Valid(lcand, base1) or (!Valid(rcand, base1) and incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
 	{
@@ -409,6 +434,7 @@ else //|S| >= 4--------------------
 		//-------------------------------------
 	}
 	//OD 
+}
 	edgepair output;
 	output.le = epl.le;
 	output.re = epr.re;
@@ -426,8 +452,17 @@ else //|S| >= 4--------------------
 int main()
 {
 string line;
-vector<point> s; 
-ifstream myfile("4.node");
+vector<point> s;
+string filename;ifstream myfile("box.node");
+
+
+cout <<"Name of file? Ex: 4.node" << endl;
+//cin >>  filename ;
+ifstream myfile("grid.node");
+
+//ifstream myfile(filename);
+
+
 if(myfile.is_open())
 {
 	getline(myfile, line);
