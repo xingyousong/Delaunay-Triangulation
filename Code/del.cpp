@@ -6,9 +6,9 @@
 
 #define REAL double
 
-//extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
-//extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
-
+extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
+extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
+/*
 REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc)
 {
 	REAL acx, bcx, acy, bcy;
@@ -43,12 +43,13 @@ REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
 
 	return alift * bcdet + blift * cadet + clift * abdet;
 }
-
+code so that visual studio works with this 
+*/
 
 using namespace std;
 
 struct point
-{
+{	int id; 
 	double coor[2];
 	bool operator < (const point& p2) const
 	{
@@ -313,6 +314,37 @@ void printpoints(vector<point> &s)
 	}
 }
 
+//-------------------------------------
+
+
+
+class subdivision //this is a basic container that will output the triangles
+{
+public:
+	void addEdge(point*, point*);
+	
+
+private:
+	vector< pair< point*, point*  > > edgelist;
+	map<point*, vector<point*> > adjlist;  
+};
+//------------------------------------
+// algorithm to make a triangluation output will be sort each adjacency list for each vertex, 
+// as we add more vertices, if there is a collision, check consecutive
+void subdivision::addEdge(point* a, point* b)
+{	
+	pair< point*, point* > temp; 
+	temp = make_pair(a, b);
+	edgelist.push_back(temp);
+
+	adjlist[a].pushback(b);
+	adjlist[b].pushback(a);
+}
+
+
+
+
+//---- end of subdivision container
 
 //--------------------------------- entire delaunay program
 edgepair delaunay(vector<point> &s, int begin, int end) //begin = 0, end = length -1
@@ -489,11 +521,14 @@ string filename;
 
 
 
-cout <<"Name of file? Ex: 4.node" << endl;
-//cin >>  filename ;
-ifstream myfile("C:\\Users\\songr_000\\OneDrive\\All\\School\\Berkeley\\Spring 2017\\CS 274 - Computational Geo\\Project\\Code\\Test Files\\4.node");
 
-//ifstream myfile(filename);
+cout <<"Name of file? Ex: 4.node" << endl;
+//cin >>  filename;
+//char* S = filename.c_str();
+
+ifstream myfile;
+myfile.open("4.node");
+
 
 
 if(myfile.is_open())
@@ -504,13 +539,14 @@ if(myfile.is_open())
 	while(getline(myfile, line))
 	{
 		istringstream is(line);
-		double temp;
+		double id;
 		double x;
 		double y;
-		is >> temp;
+		is >> id;
 		is >> x;
 		is >> y;
 		point p;
+		p.id = id;
 		p.coor[0] = x;
 		p.coor[1] = y;
 		s.push_back(p);
@@ -525,7 +561,7 @@ edgepair eppp = delaunay(s, 0, s.size()-1);
 }
 else
 	{
-		cout <<"Unable to open file";
+		cout <<"Unable to open file" << endl;
 	}
 
 
