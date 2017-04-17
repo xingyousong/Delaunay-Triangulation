@@ -5,10 +5,46 @@
 #include <sstream>
 
 #define REAL double
- 
-extern "C" double doublerand(); 
-extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
-extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd); 
+
+//extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
+//extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
+
+REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc)
+{
+	REAL acx, bcx, acy, bcy;
+
+	acx = pa[0] - pc[0];
+	bcx = pb[0] - pc[0];
+	acy = pa[1] - pc[1];
+	bcy = pb[1] - pc[1];
+	return acx * bcy - acy * bcx;
+
+}
+
+REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
+{
+	REAL adx, ady, bdx, bdy, cdx, cdy;
+	REAL abdet, bcdet, cadet;
+	REAL alift, blift, clift;
+
+	adx = pa[0] - pd[0];
+	ady = pa[1] - pd[1];
+	bdx = pb[0] - pd[0];
+	bdy = pb[1] - pd[1];
+	cdx = pc[0] - pd[0];
+	cdy = pc[1] - pd[1];
+
+	abdet = adx * bdy - bdx * ady;
+	bcdet = bdx * cdy - cdx * bdy;
+	cadet = cdx * ady - adx * cdy;
+	alift = adx * adx + ady * ady;
+	blift = bdx * bdx + bdy * bdy;
+	clift = cdx * cdx + cdy * cdy;
+
+	return alift * bcdet + blift * cadet + clift * abdet;
+}
+
+
 using namespace std;
 
 struct point
@@ -28,17 +64,17 @@ struct point
 		{
 			return (coor[1] < p2.coor[1]);
 		}
-	} 
+	}
 };
 
 class QuadEdge;
 
 class edge
 {
-	friend QuadEdge; 
+	friend QuadEdge;
 	friend void Splice(edge*, edge*);
 private:
-	int num; 
+	int num;
 	edge *next;
 	point *data;
 public:
@@ -46,7 +82,7 @@ public:
 	edge* Rot();
 	edge* invRot();
 	edge* Sym();
-	
+
 	edge* Onext();
 	edge* Oprev();
 	edge* Dnext();
@@ -65,7 +101,7 @@ public:
 
 };
 
-class QuadEdge 
+class QuadEdge
 {
 	friend edge *MakeEdge();
 private:
@@ -97,13 +133,12 @@ edge* edge::Sym()
 }
 edge* edge::Onext()
 {
-	return next; 
+	return next;
 }
 edge* edge::Oprev()
 {
 	return (Rot() -> Onext()) -> Rot();
 }
-
 edge* edge::Dnext()
 {
 	return (Sym() -> Onext()) -> Sym();
@@ -128,13 +163,11 @@ edge* edge::Rprev()
 {
 	return Sym() -> Onext();
 }
-
 void edge::EndPoints(point* origin, point* de)
 {
 	data = origin;
 	(Sym() -> data) = de;
 }
-
 point* edge::Org()
 {
 	return data;
@@ -143,12 +176,10 @@ point* edge::Dest()
 {
 	return Sym()-> data;
 }
-
 void edge::changeorg(point* p)
 {
 	data = p;
 }
-
 void edge::changedest(point* p)
 {
 	(Sym() -> data) = p;
@@ -163,18 +194,18 @@ public:
 	void Splict(edge*, edge*);
 	void DeleteEdge(edge*);
 	edge* Connect(edge*, edge*);
-	unordered_map<int, QuadEdge*> record; 
+	unordered_map<int, QuadEdge*> record;
 
 };
-)
+
 */
 //----------------------------subdivision to keep track ------------------------
 
 
 edge* MakeEdge()
 {
-	QuadEdge *q1 = new QuadEdge; 
-	return q1->e; 
+	QuadEdge *q1 = new QuadEdge;
+	return q1->e;
 }
 
 void Splice(edge* a, edge* b)
@@ -187,8 +218,8 @@ void Splice(edge* a, edge* b)
 	edge* t3 = beta -> Onext();
 	edge* t4 = alpha -> Onext();
 
-	a->next = t1; 
-	b->next = t2; 
+	a->next = t1;
+	b->next = t2;
 	alpha->next = t3;
 	beta-> next = t4;
 }
@@ -212,7 +243,7 @@ edge* Connect(edge* a, edge* b)
 	return e;
 }
 
-void Swap(edge* e) // I never used this function 
+void Swap(edge* e) // I never used this function
 {
 	edge* a = e->Oprev();
 	edge* b = e-> Sym() -> Oprev();
@@ -237,7 +268,7 @@ bool LeftOf(point* p, edge* e)
 bool Valid(edge* e, edge* base1)
 {
 	return RightOf(e->Dest(), base1);
-} 
+}
 
 
 struct edgepair
@@ -275,7 +306,7 @@ void printpoints(vector<point> &s)
 {
 	cout << "Points In Order" << endl;
 	for(int i=0; i< s.size(); i++)
-	{	
+	{
 		double x = ((s[i].coor)[0]);
 		double y = ((s[i].coor)[1]);
 		cout << x << " " << y << endl;
@@ -291,7 +322,7 @@ if ( (end - begin +1) == 2 )
 {
 edge* a = MakeEdge();
 a->changeorg(&s[begin]);
-a->changedest(&s[begin+1]); 
+a->changedest(&s[begin+1]);
 edgepair ep;
 ep.le = a;
 ep.re = a->Sym();
@@ -302,13 +333,13 @@ return ep;
 }//-----------end of if size = 2
 else if((end - begin +1) == 3)
 {
-	edge* a = MakeEdge(); 
+	edge* a = MakeEdge();
 	edge* b = MakeEdge();
 	Splice(a->Sym(), b);
 	a->changeorg(&s[begin]); //a,Org <- s1
 	b->changeorg(&s[begin+1]);
 	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
-	
+
 	//----test
 
 	//-----test
@@ -325,14 +356,14 @@ else if((end - begin +1) == 3)
 	if(orient2dexact(s[begin].coor, s[begin+1].coor, s[begin+2].coor) >0)
 	{
 		edge* c = Connect(b,a);
-		edgepair ep; 
-		ep.le = a; 
+		edgepair ep;
+		ep.le = a;
 		ep.re = b -> Sym();
 
 		//---------print
 		printedge(c);
 		//---------print
-		
+
 		return ep;
 	}
 	else if(orient2dexact(s[begin].coor, s[begin+2].coor, s[begin+1].coor) >0)
@@ -352,7 +383,7 @@ else if((end - begin +1) == 3)
 		ep.le = a;
 		ep.re = b->Sym();
 		//-----------------
-		
+
 		return ep;
 
 	} //---- three points are collinear
@@ -360,13 +391,14 @@ else if((end - begin +1) == 3)
 else //|S| >= 4--------------------
 {	//[ldo, ldi] = [epl.le, epl.re]
 	//[rdi, rdo] = [epr.le, epr.re]
-	edgepair epl = delaunay(s, 0, end/2);
-	edgepair epr = delaunay(s, end/2+1, end);
+	int middle = (begin + end) / 2;
+	edgepair epl = delaunay(s, begin, middle);
+	edgepair epr = delaunay(s, middle+1, end);
 
 	edge* ldo = epl.le;
 	edge* ldi = epl.re;
-	edge* rdi = epr.le; 
-	edge* rdo = epr.re; 
+	edge* rdi = epr.le;
+	edge* rdo = epr.re;
 	while(true)
 	{
 
@@ -379,7 +411,7 @@ else //|S| >= 4--------------------
 			rdi = rdi -> Rprev();
 		}
 		else
-		{	
+		{
 			break;
 		}
 	}
@@ -403,7 +435,7 @@ while(true)
 			DeleteEdge(lcand);
 			lcand = t;
 		}
-	} 
+	}
 	edge* rcand = base1 -> Oprev();
 	if(Valid(rcand, base1))
 	{
@@ -414,11 +446,11 @@ while(true)
 			rcand = t;
 		}
 	}
-	if (!Valid(lcand, base1) and !Valid(rcand, base1))
+	if (!Valid(lcand, base1) && !Valid(rcand, base1))
 	{
 		break;
 	}
-	if ( !Valid(lcand, base1) or (!Valid(rcand, base1) and incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
+	if ( !Valid(lcand, base1) || (!Valid(rcand, base1) && incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
 	{
 		base1 = Connect(rcand, base1 -> Sym());
 
@@ -433,7 +465,7 @@ while(true)
 		printedge(base1);
 		//-------------------------------------
 	}
-	//OD 
+	//OD
 }
 	edgepair output;
 	output.le = epl.le;
@@ -453,12 +485,13 @@ int main()
 {
 string line;
 vector<point> s;
-string filename;ifstream myfile("box.node");
+string filename;
+
 
 
 cout <<"Name of file? Ex: 4.node" << endl;
 //cin >>  filename ;
-ifstream myfile("grid.node");
+ifstream myfile("C:\\Users\\songr_000\\OneDrive\\All\\School\\Berkeley\\Spring 2017\\CS 274 - Computational Geo\\Project\\Code\\Test Files\\4.node");
 
 //ifstream myfile(filename);
 
@@ -467,7 +500,7 @@ if(myfile.is_open())
 {
 	getline(myfile, line);
 	int N = line[0] - '0';
-	
+
 	while(getline(myfile, line))
 	{
 		istringstream is(line);
@@ -477,23 +510,24 @@ if(myfile.is_open())
 		is >> temp;
 		is >> x;
 		is >> y;
-		point p; 
+		point p;
 		p.coor[0] = x;
 		p.coor[1] = y;
 		s.push_back(p);
 	}
 myfile.close();
+sort(s.begin(), s.end());
+printpoints(s);
+
+
+edgepair eppp = delaunay(s, 0, s.size()-1);
+
 }
 else
 	{
 		cout <<"Unable to open file";
 	}
 
-sort(s.begin(), s.end());
-printpoints(s);
-
-
-edgepair eppp = delaunay(s, 0, s.size()-1);
 
 
 }
