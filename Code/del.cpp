@@ -54,7 +54,7 @@ using namespace std;
 struct point
 {	int id; 
 	double coor[2];
-	
+	/*
 	bool operator < (const point& p2) const
 	{
 		if(coor[0] < p2.coor[0])
@@ -69,7 +69,7 @@ struct point
 		{
 			return (coor[1] < p2.coor[1]);
 		}
-	} 
+	} */
 };
 bool x_first(point p1, point p2)
 {
@@ -373,7 +373,7 @@ edgepair delaunay(vector<point> &s, int begin, int end, bool vertical, bool alte
 {
 
 if ( (end - begin ) == 2 )
-{	/*
+{	
 	if(vertical)
 	{
 		sort(s.begin() + begin, s.begin() + end , x_first);
@@ -382,7 +382,7 @@ if ( (end - begin ) == 2 )
 	{
 		sort(s.begin() + begin, s.begin() + end , y_first);
 	}
-*/
+
 
 
 edge* a = MakeEdge();
@@ -397,7 +397,7 @@ printedge(a);
 return ep;
 }//-----------end of if size = 2
 else if((end - begin ) == 3)
-{	/*
+{	
 	if(vertical)
 	{
 		sort(s.begin() + begin, s.begin() + end, x_first);
@@ -406,7 +406,7 @@ else if((end - begin ) == 3)
 	{
 		sort(s.begin() + begin, s.begin() + end, y_first);
 	}
-	*/
+	
 	edge* a = MakeEdge();
 	edge* b = MakeEdge();
 	Splice(a->Sym(), b);
@@ -458,7 +458,7 @@ else if((end - begin ) == 3)
 } //---end of |S| = 3
 else //|S| >= 4--------------------
 {	int middle = (begin + end) / 2;
-	/*
+	
 	if (vertical) 
 	{
         std::nth_element(
@@ -477,7 +477,7 @@ else //|S| >= 4--------------------
         );
 
     }
-*/
+
     edgepair epl;
     edgepair epr; 
 	if (alternate) 
@@ -674,7 +674,7 @@ if(myfile.is_open())
 		s.push_back(p);
 	}
 myfile.close();
-sort(s.begin(), s.end());
+//sort(s.begin(), s.end(), x_first);
 printpoints(s);
 
 bool vertical = true;
