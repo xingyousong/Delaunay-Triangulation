@@ -3,8 +3,11 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <chrono>
+#include <map>
 
 #define REAL double
+#define MILLI_PER_NANO 0.000001
 
 extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
 extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
@@ -51,6 +54,7 @@ using namespace std;
 struct point
 {	int id; 
 	double coor[2];
+	
 	bool operator < (const point& p2) const
 	{
 		if(coor[0] < p2.coor[0])
@@ -65,8 +69,20 @@ struct point
 		{
 			return (coor[1] < p2.coor[1]);
 		}
-	}
+	} 
 };
+bool x_first(point p1, point p2)
+{
+	return p1.coor[0] < p2.coor[0] || (p1.coor[0] == p2.coor[0] && p1.coor[1] < p2.coor[1]);
+}
+bool y_first(point p1, point p2)
+{
+	return p1.coor[1] > p2.coor[1] || (p1.coor[1] == p2.coor[1] && p1.coor[0] < p2.coor[0]);
+}
+
+
+
+
 
 class QuadEdge;
 
@@ -317,6 +333,8 @@ void printpoints(vector<point> &s)
 //-------------------------------------
 
 
+/*
+
 
 class subdivision //this is a basic container that will output the triangles
 {
@@ -333,25 +351,40 @@ private:
 // as we add more vertices, if there is a collision, check consecutive
 void subdivision::addEdge(point* a, point* b)
 {	
-	pair< point*, point* > temp; 
+	pair< point*, point* > temp; //NEED UNIQUENESS 
 	temp = make_pair(a, b);
 	edgelist.push_back(temp);
 
-	adjlist[a].pushback(b);
-	adjlist[b].pushback(a);
+	adjlist[a] = b;
+	adjlist[b] = a;
 }
+//NEEEEEEEEEEEEEDS WORKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
 
-
+*/
 
 
 //---- end of subdivision container
 
+// operator for sorting 
+
+
 //--------------------------------- entire delaunay program
-edgepair delaunay(vector<point> &s, int begin, int end) //begin = 0, end = length -1
+edgepair delaunay(vector<point> &s, int begin, int end, bool vertical, bool alternate) //begin = 0, end = length 
 {
 
-if ( (end - begin +1) == 2 )
-{
+if ( (end - begin ) == 2 )
+{	/*
+	if(vertical)
+	{
+		sort(s.begin() + begin, s.begin() + end , x_first);
+	} 
+	else
+	{
+		sort(s.begin() + begin, s.begin() + end , y_first);
+	}
+*/
+
+
 edge* a = MakeEdge();
 a->changeorg(&s[begin]);
 a->changedest(&s[begin+1]);
@@ -363,20 +396,23 @@ printedge(a);
 //------------------print
 return ep;
 }//-----------end of if size = 2
-else if((end - begin +1) == 3)
-{
+else if((end - begin ) == 3)
+{	/*
+	if(vertical)
+	{
+		sort(s.begin() + begin, s.begin() + end, x_first);
+	} 
+	else
+	{
+		sort(s.begin() + begin, s.begin() + end, y_first);
+	}
+	*/
 	edge* a = MakeEdge();
 	edge* b = MakeEdge();
 	Splice(a->Sym(), b);
 	a->changeorg(&s[begin]); //a,Org <- s1
 	b->changeorg(&s[begin+1]);
 	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
-
-	//----test
-
-	//-----test
-
-
 	b->changedest(&s[begin+2]);
 
 	//------------------------------print
@@ -421,16 +457,102 @@ else if((end - begin +1) == 3)
 	} //---- three points are collinear
 } //---end of |S| = 3
 else //|S| >= 4--------------------
-{	//[ldo, ldi] = [epl.le, epl.re]
-	//[rdi, rdo] = [epr.le, epr.re]
-	int middle = (begin + end) / 2;
-	edgepair epl = delaunay(s, begin, middle);
-	edgepair epr = delaunay(s, middle+1, end);
+{	int middle = (begin + end) / 2;
+	/*
+	if (vertical) 
+	{
+        std::nth_element(
+            s.begin() + begin,
+            s.begin() + middle,
+            s.begin() + end,
+            x_first
+        );
+    } else 
+    {
+        std::nth_element(
+            s.begin() + begin,
+            s.begin() + middle,
+            s.begin() + end,
+            y_first
+        );
 
+    }
+*/
+    edgepair epl;
+    edgepair epr; 
+	if (alternate) 
+	{
+	epl = delaunay(s, begin, middle, !vertical, alternate);
+	epr = delaunay(s, middle, end, !vertical, alternate);
+	}
+	else
+	{
+	epl = delaunay(s, begin, middle, vertical, alternate);
+	epr = delaunay(s, middle, end, vertical, alternate);
+	}
+	
+	//[ldo, ldi] = [epl.le, epl.re]
+	//[rdi, rdo] = [epr.le, epr.re]
 	edge* ldo = epl.le;
 	edge* ldi = epl.re;
 	edge* rdi = epr.le;
 	edge* rdo = epr.re;
+
+// alternate switches 
+/*
+	if (alternate) 
+	{
+        // If vertical is True, then we need leftmost + rightmost of each side as before
+        // If vertical is False, then we need topmost + bottommost
+        // In either case, the recursive step outputs the opposite.
+        bool (*comparator)(point, point ) = vertical ? x_first : y_first;
+
+        // ldo is ccw edge from topmost/leftmost vertex
+        // if topmost - go ccw to get to leftmost
+        // if leftmost - go cw to get to
+        if (vertical) {
+            while (comparator(&(ldo->Rprev()->Org()), &(ldo->Org())) {
+                ldo = ldo->Rprev();
+            }
+            // ldi is cw edge from bottommost/rightmost
+            // if bottommost - go ccw to rightmost
+            // if rightmost - go cw to bottommost
+            while (comparator(&(ldi->Org()), &(ldi->Lprev()->Org()))) {
+                ldi = ldi->Lprev();
+            }
+            // and the same logic for rdi, rdo
+            while (comparator(&(rdi->Rprev()->Org()), &(rdi->Org()))) {
+                rdi = rdi->Rprev();
+            }
+            while (comparator(&(rdo->Org()), &(rdo->Lprev()->Org()))) {
+                rdo = rdo->Lprev();
+            }
+        } else {
+            // this case is similar, except the face directions
+            // are all flipped
+            while (comparator(&(ldo->Rnext()->Org()), &(ldo->Org()))) {
+                ldo = ldo->Rnext();
+            }
+            // ldi is cw edge from bottommost/rightmost
+            // if bottommost - go ccw to rightmost
+            // if rightmost - go cw to bottommost
+            while (comparator(&(ldi->Org()), &(ldi->Lnext()->Org()))) {
+                ldi = ldi->Lnext();
+            }
+            // and the same logic for rdi, rdo
+            while (comparator(&(rdi->Rnext()->Org()), &(rdi->Org()))) {
+                rdi = rdi->Rnext();
+            }
+            while (comparator(&(rdo->Org()), &(rdo->Lnext()->Org()))) {
+                rdo = rdo->Lnext();
+            }
+
+        }
+    }
+
+*/
+
+//alternate switches end
 	while(true)
 	{
 
@@ -500,10 +622,10 @@ while(true)
 	//OD
 }
 	edgepair output;
-	output.le = epl.le;
-	output.re = epr.re;
+	output.le = ldo;
+	output.re = rdo;
 	//------------------------------
-	printep(output);
+	//printep(output);
 	return output;
 } //---end of |S| >=4
 
@@ -511,7 +633,7 @@ while(true)
 
 } //---------end of delaunay
 
-
+//--------------------------
 
 int main()
 {
@@ -555,8 +677,9 @@ myfile.close();
 sort(s.begin(), s.end());
 printpoints(s);
 
-
-edgepair eppp = delaunay(s, 0, s.size()-1);
+bool vertical = true;
+bool alternate = false; 
+edgepair eppp = delaunay(s, 0, s.size(), vertical, alternate);
 
 }
 else
