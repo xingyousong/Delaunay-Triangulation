@@ -601,6 +601,7 @@ else //|S| >= 4--------------------
 
 	//--------------------------------
 	printedge(base1);
+	sub.addEdgepoint( base1-> Org(), base1->Dest() );
 	//--------------------------------
 	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
 	if( (rdi -> Org()) == (rdo->Org())) {rdo = base1;}
@@ -683,7 +684,7 @@ subdivision sub;
 
 
 ifstream myfile;
-myfile.open("4.node");
+myfile.open("box.node");
 
 
 
@@ -714,7 +715,7 @@ printpoints(sub.s);
 bool vertical = false;
 bool alternate = true; 
 edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
-sub.killdupedge(); //not working????
+//sub.killdupedge(); //not working????
 cout << sub.edgelist.size() << endl; 
 
 
