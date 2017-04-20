@@ -196,7 +196,40 @@ edge* MakeEdge()
 }
 //-------------------------------------------------- end of edge class-------------------------------
 //---------------------------------------------------topological functions-------------------------------
-void Splice(edge* a, edge* b)
+
+
+class subdivision 
+{
+public:
+	edge* Addedge(point*, point*);
+	void  Splice(edge*, edge*);
+	edge* Connect(edge*, edge*);
+	void  DeleteEdge(edge*);
+	void  addpoint(point);
+	vector<point> s;
+	vector<edge* > record;
+};
+void subdivision::addpoint(point p)
+{	
+	
+	s.push_back(p);
+
+	
+}
+
+edge* subdivision::Addedge(point* org, point* dest)
+{
+	QuadEdge *q1 = new QuadEdge; 
+	q1 -> e[0].changeorg(org);
+	q1 -> e[0].changedest(dest);
+	q1 -> e[2].changorg(dest);
+	q1 -> e[2].changedest(org);
+	record.push_back( &(q1 -> e));
+	return &(q1 -> e[0]);
+}
+
+
+void subdivision::Splice(edge* a, edge* b)
 {
 	edge* alpha = (a->Onext()) -> Rot();
 	edge* beta = (b->Onext()) -> Rot();
@@ -211,26 +244,29 @@ void Splice(edge* a, edge* b)
 	alpha->next = t3;
 	beta-> next = t4;
 }
-void DeleteEdge(edge* e)
+void subdivision::DeleteEdge(edge* e)
 {
 	Splice(e, e->Oprev());
 	Splice(e->Sym(), (e-> Sym())->Oprev());
-	delete e-> Qedge();
+	QuadEdge* temp = e-> Qedge();
+	record.erase(remove(record.begin(), record.end(), temp), record.end());
+	delete temp;
 }
 
 
 
-edge* Connect(edge* a, edge* b)
+edge* subdivision::Connect(edge* a, edge* b)
 {
-	edge* e = MakeEdge();
-	e -> changeorg(a -> Dest());
-	e -> changedest(b -> Org());
+	edge* e = Addedge(a -> Dest(), b -> Org());
+
+
+
 	Splice(e, a-> Lnext());
 	Splice(e->Sym(), b);
 	//e-> EndPoints(a->Dest(), b-> Org());
 	return e;
 }
-
+/*
 void Swap(edge* e) // I never used this function
 {
 	edge* a = e->Oprev();
@@ -243,7 +279,7 @@ void Swap(edge* e) // I never used this function
 	e -> changeorg(a -> Dest());
 	e -> changedest(b ->Dest());
 }
-
+*/
 bool RightOf(point* p, edge* e)
 {
 	return (orient2dexact(p -> coor, e-> Dest()->coor, e->Org()->coor) > 0);
@@ -304,7 +340,7 @@ void printpoints(vector<point> &s)
 //-------------------------------------
 
 
-
+/*
 
 
 class subdivision //this is a basic container that will output the triangles
@@ -318,11 +354,15 @@ public:
 	void killdupedge();
 	vector< tuple< int, int  > > edgelist; //supposed to be private
 	vector< tuple<int, int, int> > trianglelist; // supposed to be private
+
+	vector< edge* > edgepointlist; 
+
 	void neighborsort(); 
 	void maketriangle(); // main meat
 private:
 	map< int, point*> pointid; 
 	map< int, vector<int> > adjlist;  
+
 
 };
 //------------------------------------
@@ -417,15 +457,14 @@ if ( (end - begin ) == 2 )
 
 
 
-edge* a = MakeEdge();
-a->changeorg(&(sub.s[begin]));
-a->changedest(&(sub.s[begin+1]));
+
+edge* a = sub.Addedge(&(sub.s[begin]), &(sub.s[begin+1]) );
 edgepair ep;
 ep.le = a;
 ep.re = a->Sym();
 //------------------print
 printedge(a);
-sub.addEdgepoint( a-> Org(), a->Dest() );
+//sub.addEdgepoint( a-> Org(), a->Dest() );
 //------------------print
 return ep;
 }//-----------end of if size = 2
@@ -442,7 +481,7 @@ else if((end - begin ) == 3)
 	
 	edge* a = MakeEdge();
 	edge* b = MakeEdge();
-	Splice(a->Sym(), b);
+	s.Splice(a->Sym(), b);
 	a->changeorg(&(sub.s[begin])); //a,Org <- s1
 	b->changeorg(&(sub.s[begin+1]));
 	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
@@ -451,8 +490,11 @@ else if((end - begin ) == 3)
 	//------------------------------print
 	printedge(a);
 	printedge(b);
-	sub.addEdgepoint( a-> Org(), a->Dest() );
-	sub.addEdgepoint( b-> Org(), b->Dest() );
+	sub.record.push_back(a);
+	sub.record.push_back(b);
+
+	//sub.addEdgepoint( a-> Org(), a->Dest() );
+	//sub.addEdgepoint( b-> Org(), b->Dest() );
 	//------------------------------print
 
 //--------[Now Close the Triangle]--
@@ -465,20 +507,20 @@ else if((end - begin ) == 3)
 
 		//---------print
 		printedge(c);
-		sub.addEdgepoint( c-> Org(), c->Dest() );
+		sub.Addedge(c);
 		//---------print
 
 		return ep;
 	}
 	else if(orient2dexact(sub.s[begin].coor, sub.s[begin+2].coor, sub.s[begin+1].coor) >0)
 	{
-		edge* c = Connect(b,a);
+		edge* c = sub.Connect(b,a);
 		edgepair ep;
 		ep.le = c->Sym();
 		ep.re = c;
 		//-----------------------------
 		printedge(c);
-		sub.addEdgepoint( c-> Org(), c->Dest() );
+		sub.Addedge( c );
 		//-----------------------------
 		return ep;
 	}
@@ -597,11 +639,11 @@ else //|S| >= 4--------------------
 			break;
 		}
 	}
-	edge* base1 = Connect(rdi -> Sym(), ldi);
+	edge* base1 = sub.Connect(rdi -> Sym(), ldi);
 
 	//--------------------------------
 	printedge(base1);
-	sub.addEdgepoint( base1-> Org(), base1->Dest() );
+	sub.Addedge( base1);
 	//--------------------------------
 	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
 	if( (rdi -> Org()) == (rdo->Org())) {rdo = base1;}
@@ -615,7 +657,7 @@ while(true)
 		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, (lcand ->Onext()) -> Dest() -> coor  )  > 0 )
 		{
 			edge* t = lcand -> Onext();
-			DeleteEdge(lcand);
+			sub.DeleteEdge(lcand);
 			lcand = t;
 		}
 	}
@@ -625,7 +667,7 @@ while(true)
 		while(incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, rcand ->Dest() -> coor, rcand ->Oprev() -> Dest() -> coor  )  > 0)
 		{
 			edge* t = rcand -> Oprev();
-			DeleteEdge(rcand);
+			sub.DeleteEdge(rcand);
 			rcand = t;
 		}
 	}
@@ -635,19 +677,19 @@ while(true)
 	}
 	if ( !Valid(lcand, base1) || (!Valid(rcand, base1) && incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
 	{
-		base1 = Connect(rcand, base1 -> Sym());
+		base1 = sub.Connect(rcand, base1 -> Sym());
 
 		//----------------------------------
 		printedge(base1);
-		sub.addEdgepoint( base1-> Org(), base1->Dest() );
+		//sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//----------------------------------
 	}
 	else
 	{
-		base1 = Connect(base1 -> Sym(), lcand ->Sym());
+		base1 = sub.Connect(base1 -> Sym(), lcand ->Sym());
 		//-----------------------------------
 		printedge(base1);
-		sub.addEdgepoint( base1-> Org(), base1->Dest() );
+		//sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//-------------------------------------
 	}
 	//OD
@@ -657,8 +699,8 @@ while(true)
 	output.re = rdo;
 	//------------------------------
 	//printep(output);
-	sub.addEdgepoint( ldo-> Org(), ldo->Dest() );
-	sub.addEdgepoint( rdo-> Org(), rdo->Dest() );
+	//sub.addEdgepoint( ldo-> Org(), ldo->Dest() );
+	//sub.addEdgepoint( rdo-> Org(), rdo->Dest() );
 	return output;
 } //---end of |S| >=4
 
@@ -703,7 +745,7 @@ if(myfile.is_open())
 		is >> x;
 		is >> y;
 		point p;
-		p.id = id;
+		p.id = id; 
 		p.coor[0] = x;
 		p.coor[1] = y;
 		sub.addpoint(p);
@@ -716,7 +758,7 @@ bool vertical = false;
 bool alternate = true; 
 edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
 //sub.killdupedge(); //not working????
-cout << sub.edgelist.size() << endl; 
+cout << sub.record.size() << endl; 
 
 
 
