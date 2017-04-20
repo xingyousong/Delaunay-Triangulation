@@ -316,7 +316,7 @@ public:
 	void addpoint(point);
 	void addEdgepoint(point*, point*);
 	void killdupedge();
-	vector< tuple< int, int  > > edgelist; //supposed to be private
+	vector< pair< int, int  > > edgelist; //supposed to be private
 	vector< tuple<int, int, int> > trianglelist; // supposed to be private
 	void neighborsort(); 
 	void maketriangle(); // main meat
@@ -334,7 +334,8 @@ void subdivision::addEdge(int a, int b)
 	{
 		return;
 	}
-	tuple < int, int> temp = make_tuple(a, b ); //NEED UNIQUENESS 
+	if (a > b) {swap(b,a);}
+	pair < int, int> temp (a, b ); //NEED UNIQUENESS 
 
 	edgelist.push_back(temp);
 
@@ -379,15 +380,15 @@ bool custom(tuple<int, int> e1, tuple<int, int> e2)
 */
 
 void subdivision::killdupedge()
-{	
-	vector<tuple<int, int>>::iterator it;
-	it = unique (edgelist.begin(), edgelist.end(), tuplecomp);
+{	/*
+	vector<pair<int, int>>::iterator it;
+	it = unique (edgelist.begin(), edgelist.end());
 	edgelist.resize(distance(edgelist.begin(), it));
-	
-	
-	/*set< tuple<int, int>, tuplecomp > temp(edgelist.begin(), edgelist.end());
-	edgelist.assign(temp.begin(), temp.end());
 	*/
+	
+	set< pair<int, int> > temp(edgelist.begin(), edgelist.end());
+	edgelist.assign(temp.begin(), temp.end());
+	
 }
 void subdivision::addEdgepoint(point* a, point* b)
 {
@@ -462,12 +463,12 @@ else if((end - begin ) == 3)
 	
 	edge* a = MakeEdge();
 	edge* b = MakeEdge();
-	Splice(a->Sym(), b);
+	
 	a->changeorg(&(sub.s[begin])); //a,Org <- s1
 	b->changeorg(&(sub.s[begin+1]));
 	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
 	b->changedest(&(sub.s[begin+2]));
-
+	Splice(a->Sym(), b);
 	//------------------------------print
 	printedge(a);
 	printedge(b);
@@ -711,7 +712,7 @@ subdivision sub;
 
 
 ifstream myfile;
-myfile.open("grid.node");
+myfile.open("box.node");
 
 
 
@@ -739,12 +740,12 @@ myfile.close();
 
 printpoints(sub.s);
 
-bool vertical = false;
-bool alternate = true; 
+bool vertical = true;
+bool alternate = false; 
 edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
-//sub.killdupedge(); //not working????
+sub.killdupedge(); //not working????
 cout << sub.edgelist.size() << endl; 
-//sub.printalledge();
+sub.printalledge();
 
 
 }
