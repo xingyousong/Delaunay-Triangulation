@@ -7,9 +7,15 @@
 #include <map>
 #include <tuple>
 #include <set>
+#include <time.h> 
+#include <math.h>
 
 #define REAL double
-#define MILLI_PER_NANO 0.000001
+#define MILL_PER_NANO 0.000001
+
+//using chrono::nanoseconds;
+using namespace std;
+typedef chrono::high_resolution_clock Timer;
 
 extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
 extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
@@ -51,7 +57,6 @@ REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
 code so that visual studio works with this 
 */
 
-using namespace std;
 
 struct point
 {	int id; 
@@ -658,7 +663,7 @@ while(true)
 			rcand = t;
 		}
 	}
-	
+
 	if (!Valid(lcand, base1) && !Valid(rcand, base1))
 	{
 		break;
@@ -705,22 +710,21 @@ int main()
 {
 string line;
 string filename;
-
-
-
+subdivision sub; 
+ifstream myfile;
+bool vertical = true;
+bool alternate = false; 
 
 cout <<"Name of file? Ex: 4.node" << endl;
-//cin >>  filename;
-//char* S = filename.c_str();
-
-subdivision sub; 
 
 
-ifstream myfile;
-myfile.open("box.node");
+bool filebool = false; 
 
+while(!filebool)
+{
+cin >> filename;
 
-
+myfile.open(filename);
 if(myfile.is_open())
 {
 	getline(myfile, line);
@@ -742,22 +746,77 @@ if(myfile.is_open())
 		sub.addpoint(p);
 	}
 myfile.close();
-
-printpoints(sub.s);
-
-bool vertical = true;
-bool alternate = false; 
-edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
-sub.killdupedge(); //not working????
-cout << sub.edgelist.size() << endl; 
-sub.printalledge();
-
-
+filebool = true;
 }
 else
 	{
-		cout <<"Unable to open file" << endl;
+		cout <<"Unable to open file. Try again?" << endl;
 	}
+
+}
+cout << "Vertical or Horizontal? Type 'v' or 'h' respectively." << endl;
+string v; 
+while(v!= "v" and v!= "h")
+{
+string v; 
+cin >> v; 
+if (v == "v")
+{
+	vertical = true;
+	break;
+}
+else if(v == "h")
+{
+	vertical = false;
+	break;
+}
+else
+{
+	cout << "You did not input a valid command. Type 'v' or 'h' respectively." << endl;
+}
+}
+cout << "Alternate or not? Type 'a' or 'na' respectively." << endl;
+
+string a; 
+while(a!= "a" and v!= "na")
+{
+string a; 
+cin >> a; 
+if (a == "a")
+{
+	alternate = true;
+	break;
+}
+else if(a == "na")
+{
+	alternate = false;
+	break;
+}
+else
+{
+	cout << "You did not input a valid command. Type 'a' or 'na' respectively." << endl;
+}
+}
+
+
+
+
+printpoints(sub.s);
+
+clock_t t= clock();
+// start time!
+edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
+t = clock() - t; 
+float sec = ((float) t)/CLOCKS_PER_SEC;
+cout << sec << endl;
+//nanoseconds ms = chrono::duration_cast<nanoseconds>(t2 - t1);
+//cout << ms.count() * MILL_PER_NANO << endl;
+/*
+sub.killdupedge(); //not working????
+cout << sub.edgelist.size() << endl; 
+sub.printalledge();
+*/
+
 
 
 
