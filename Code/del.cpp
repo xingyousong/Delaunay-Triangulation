@@ -640,6 +640,8 @@ while(true)
 		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, (lcand ->Onext()) -> Dest() -> coor  )  > 0 )
 		{
 			edge* t = lcand -> Onext();
+			printedge(t);
+			cout << "DELETED" << endl;
 			DeleteEdge(lcand);
 			lcand = t;
 		}
@@ -650,10 +652,13 @@ while(true)
 		while(incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, rcand ->Dest() -> coor, rcand ->Oprev() -> Dest() -> coor  )  > 0)
 		{
 			edge* t = rcand -> Oprev();
+			printedge(t);
+			cout << "DELETED" << endl;
 			DeleteEdge(rcand);
 			rcand = t;
 		}
 	}
+	
 	if (!Valid(lcand, base1) && !Valid(rcand, base1))
 	{
 		break;
