@@ -448,10 +448,10 @@ a->changedest(&(sub.s[begin+1]));
 edgepair ep;
 ep.le = a;
 ep.re = a->Sym();
-//------------------print
+/*//------------------print
 printedge(a);
 cout << "a" << endl;
-sub.addEdgepoint( a-> Org(), a->Dest() );
+sub.addEdgepoint( a-> Org(), a->Dest() );*/
 //------------------print
 return ep;
 }//-----------end of if size = 2
@@ -474,13 +474,13 @@ else if((end - begin ) == 3)
 	a->changedest(b -> Org()); //a.Dest <--b.Org <--- s2;s
 	b->changedest(&(sub.s[begin+2]));
 	Splice(a->Sym(), b);
-	//------------------------------print
+	/*//------------------------------print
 	printedge(a);
 	printedge(b);
 	cout << "a, b" << endl;
 	sub.addEdgepoint( a-> Org(), a->Dest() );
 	sub.addEdgepoint( b-> Org(), b->Dest() );
-	//------------------------------print
+	//------------------------------print */
 
 //--------[Now Close the Triangle]--
 	if(orient2dexact(sub.s[begin].coor, sub.s[begin+1].coor, sub.s[begin+2].coor) >0)
@@ -490,12 +490,12 @@ else if((end - begin ) == 3)
 		ep.le = a;
 		ep.re = b -> Sym();
 
-		//---------print
+		/*//---------print
 		printedge(c);
 		cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
 		//---------print
-
+		*/
 		return ep;
 	}
 	else if(orient2dexact(sub.s[begin].coor, sub.s[begin+2].coor, sub.s[begin+1].coor) >0)
@@ -504,10 +504,11 @@ else if((end - begin ) == 3)
 		edgepair ep;
 		ep.le = c->Sym();
 		ep.re = c;
-		//-----------------------------
+		/*//-----------------------------
 		printedge(c);
 		cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
+		*/
 		//-----------------------------
 		return ep;
 	}
@@ -628,11 +629,11 @@ else //|S| >= 4--------------------
 	}
 	edge* base1 = Connect(rdi -> Sym(), ldi);
 
-	//--------------------------------
+	/*//--------------------------------/*
 	printedge(base1);
 	cout << "base1-------" << endl; 
 	sub.addEdgepoint( base1-> Org(), base1->Dest() );
-	//--------------------------------
+	//-------------------------------- */
 	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
 	if( (rdi -> Org()) == (rdo->Org())) {rdo = base1;}
 
@@ -645,9 +646,9 @@ while(true)
 		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, (lcand ->Onext()) -> Dest() -> coor  )  > 0 )
 		{
 			edge* t = lcand -> Onext();
-			printedge(t);
-			cout << "DELETED" << endl;
-			DeleteEdge(lcand);
+			/*printedge(t);
+			cout << "DELETED" << endl; */
+			DeleteEdge(lcand); 
 			lcand = t;
 		}
 	}
@@ -657,8 +658,9 @@ while(true)
 		while(incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, rcand ->Dest() -> coor, rcand ->Oprev() -> Dest() -> coor  )  > 0)
 		{
 			edge* t = rcand -> Oprev();
+			/*
 			printedge(t);
-			cout << "DELETED" << endl;
+			cout << "DELETED" << endl; */
 			DeleteEdge(rcand);
 			rcand = t;
 		}
@@ -672,20 +674,22 @@ while(true)
 	{
 		base1 = Connect(rcand, base1 -> Sym());
 
-		//----------------------------------
+		/*//----------------------------------
 		printedge(base1);
 		cout << "base1x" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//----------------------------------
+		*/
 	}
 	else
 	{
 		base1 = Connect(base1 -> Sym(), lcand ->Sym());
 		//-----------------------------------
-		printedge(base1);
+		/*printedge(base1);
 		cout << "base1y" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//-------------------------------------
+		*/
 	}
 	//OD
 }
@@ -693,11 +697,13 @@ while(true)
 	output.le = ldo;
 	output.re = rdo;
 	//------------------------------
-	printep(output);
+	/*printep(output);
 	cout << "output" << endl;
 	sub.addEdgepoint( ldo-> Org(), ldo->Dest() );
 	sub.addEdgepoint( rdo-> Org(), rdo->Dest() );
+	*/
 	return output;
+	
 } //---end of |S| >=4
 
 
