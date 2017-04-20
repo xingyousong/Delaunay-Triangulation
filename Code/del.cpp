@@ -6,7 +6,7 @@
 #include <chrono>
 #include <map>
 #include <tuple>
-
+#include <set>
 
 #define REAL double
 #define MILLI_PER_NANO 0.000001
@@ -320,6 +320,7 @@ public:
 	vector< tuple<int, int, int> > trianglelist; // supposed to be private
 	void neighborsort(); 
 	void maketriangle(); // main meat
+	void printalledge();
 private:
 	map< int, point*> pointid; 
 	map< int, vector<int> > adjlist;  
@@ -329,7 +330,10 @@ private:
 // algorithm to make a triangluation output will be sort each adjacency list for each vertex, 
 // as we add more vertices, if there is a collision, check consecutive
 void subdivision::addEdge(int a, int b)
-{	
+{	if (a==b)
+	{
+		return;
+	}
 	tuple < int, int> temp = make_tuple(a, b ); //NEED UNIQUENESS 
 
 	edgelist.push_back(temp);
@@ -344,17 +348,12 @@ point* subdivision::getpoint(int i)
 
 void subdivision::addpoint(point p)
 {	
-	if(p.coor[0] == p.coor[1])
-	{
-		return; 
-	}
-	else
-	{
+	
 	s.push_back(p);
 	pointid[p.id] = &p;
 	vector<int> temp; 
 	adjlist[p.id] = temp;
-	}
+	
 }
 bool tuplecomp(tuple<int, int> e1, tuple<int, int> e2 )
 {
@@ -363,7 +362,7 @@ bool tuplecomp(tuple<int, int> e1, tuple<int, int> e2 )
 	int p3 = get<0>(e2); 
 	int p4 = get<1>(e2);
 
-	if( (p1 == p3 && p2 == p4) && (p1 == p4 && p2 == p3) )
+	if( (p1 == p3 && p2 == p4) || (p1 == p4 && p2 == p3) )
 	{
 		return true; 
 	}
@@ -372,10 +371,23 @@ bool tuplecomp(tuple<int, int> e1, tuple<int, int> e2 )
 		return false;
 	}
 }
+/*
+bool custom(tuple<int, int> e1, tuple<int, int> e2)
+{
+	return p1.coor[0] < p2.coor[0] || (p1.coor[0] == p2.coor[0] && p1.coor[1] < p2.coor[1]);
+}
+*/
+
 void subdivision::killdupedge()
-{	vector<tuple<int, int>>::iterator it;
+{	
+	vector<tuple<int, int>>::iterator it;
 	it = unique (edgelist.begin(), edgelist.end(), tuplecomp);
 	edgelist.resize(distance(edgelist.begin(), it));
+	
+	
+	/*set< tuple<int, int>, tuplecomp > temp(edgelist.begin(), edgelist.end());
+	edgelist.assign(temp.begin(), temp.end());
+	*/
 }
 void subdivision::addEdgepoint(point* a, point* b)
 {
@@ -392,7 +404,14 @@ void subdivision::neighborsort() // for each node, sorts his neighbors in cc ord
 
 }
 */
-
+void subdivision::printalledge()
+{
+	for (int i = 0; i<edgelist.size(); i++)
+	{	int temp1 = get<0>(edgelist[i]);
+		int temp2 = get<1>(edgelist[i]);
+		cout << temp1 << " to " << temp2 << endl;
+	}
+}
 
 
 
@@ -425,6 +444,7 @@ ep.le = a;
 ep.re = a->Sym();
 //------------------print
 printedge(a);
+cout << "a" << endl;
 sub.addEdgepoint( a-> Org(), a->Dest() );
 //------------------print
 return ep;
@@ -451,6 +471,7 @@ else if((end - begin ) == 3)
 	//------------------------------print
 	printedge(a);
 	printedge(b);
+	cout << "a, b" << endl;
 	sub.addEdgepoint( a-> Org(), a->Dest() );
 	sub.addEdgepoint( b-> Org(), b->Dest() );
 	//------------------------------print
@@ -465,6 +486,7 @@ else if((end - begin ) == 3)
 
 		//---------print
 		printedge(c);
+		cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
 		//---------print
 
@@ -478,6 +500,7 @@ else if((end - begin ) == 3)
 		ep.re = c;
 		//-----------------------------
 		printedge(c);
+		cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
 		//-----------------------------
 		return ep;
@@ -601,6 +624,7 @@ else //|S| >= 4--------------------
 
 	//--------------------------------
 	printedge(base1);
+	cout << "base1-------" << endl; 
 	sub.addEdgepoint( base1-> Org(), base1->Dest() );
 	//--------------------------------
 	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
@@ -633,12 +657,13 @@ while(true)
 	{
 		break;
 	}
-	if ( !Valid(lcand, base1) || (!Valid(rcand, base1) && incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
+	if ( !Valid(lcand, base1) || (Valid(rcand, base1) && incircleexact(lcand-> Dest()-> coor, lcand->Org() -> coor, rcand ->Org() -> coor, rcand ->Dest() -> coor  )  > 0))
 	{
 		base1 = Connect(rcand, base1 -> Sym());
 
 		//----------------------------------
 		printedge(base1);
+		cout << "base1x" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//----------------------------------
 	}
@@ -647,6 +672,7 @@ while(true)
 		base1 = Connect(base1 -> Sym(), lcand ->Sym());
 		//-----------------------------------
 		printedge(base1);
+		cout << "base1y" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//-------------------------------------
 	}
@@ -656,7 +682,8 @@ while(true)
 	output.le = ldo;
 	output.re = rdo;
 	//------------------------------
-	//printep(output);
+	printep(output);
+	cout << "output" << endl;
 	sub.addEdgepoint( ldo-> Org(), ldo->Dest() );
 	sub.addEdgepoint( rdo-> Org(), rdo->Dest() );
 	return output;
@@ -684,7 +711,7 @@ subdivision sub;
 
 
 ifstream myfile;
-myfile.open("box.node");
+myfile.open("grid.node");
 
 
 
@@ -717,7 +744,7 @@ bool alternate = true;
 edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
 //sub.killdupedge(); //not working????
 cout << sub.edgelist.size() << endl; 
-
+//sub.printalledge();
 
 
 }
