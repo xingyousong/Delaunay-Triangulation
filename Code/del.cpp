@@ -17,9 +17,9 @@
 using namespace std;
 typedef chrono::high_resolution_clock Timer;
 
-extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
-extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
-/*
+//extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
+//extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
+
 REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc)
 {
 	REAL acx, bcx, acy, bcy;
@@ -54,8 +54,7 @@ REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
 
 	return alift * bcdet + blift * cadet + clift * abdet;
 }
-code so that visual studio works with this 
-*/
+//code for visual studio 
 
 
 struct point
@@ -220,7 +219,10 @@ void DeleteEdge(edge* e)
 {
 	Splice(e, e->Oprev());
 	Splice(e->Sym(), (e-> Sym())->Oprev());
-	delete e-> Qedge();
+	if (e->Onext() == e && e->Sym()->Onext() == e->Sym() && e->Rot()->Onext() == e->invRot() && e->invRot()->Onext() == e->Rot())
+	{
+		delete e->Qedge();
+	}
 }
 
 
@@ -236,18 +238,6 @@ edge* Connect(edge* a, edge* b)
 	return e;
 }
 
-void Swap(edge* e) // I never used this function
-{
-	edge* a = e->Oprev();
-	edge* b = e-> Sym() -> Oprev();
-	Splice(e,a);
-	Splice(e->Sym(), b);
-	Splice(e, a->Lnext());
-	Splice(e->Sym(), b->Lnext());
-	//e->EndPoints(a->Dest(), b->Dest());
-	e -> changeorg(a -> Dest());
-	e -> changedest(b ->Dest());
-}
 
 bool RightOf(point* p, edge* e)
 {
@@ -324,16 +314,70 @@ public:
 	vector< pair< int, int  > > edgelist; //supposed to be private
 	vector< tuple<int, int, int> > trianglelist; // supposed to be private
 	void neighborsort(); 
-	void maketriangle(); // main meat
+	
 	void printalledge();
+	bool anglecomp(int , int , int center);
+	void maketriangle();
 private:
 	map< int, point*> pointid; 
 	map< int, vector<int> > adjlist;  
+	vector< tuple<int, int, int> > triangles;
 
 };
 //------------------------------------
 // algorithm to make a triangluation output will be sort each adjacency list for each vertex, 
 // as we add more vertices, if there is a collision, check consecutive
+void subdivision::maketriangle()
+{
+	neighborsort(); 
+	vector<int> visited; 
+	for (int i = 0; i < s.size(); i++)
+	{
+		for (int j = 0; j < adjlist[i].size(); j++)
+		{
+
+			for (int k = 0; j < visited.size(); j++)
+			{
+				if (adjlist[i][j] == visited[k])
+				{
+					vector<int>::iterator iter = find_if(adjlist[visited[k]].begin(), adjlist[visited[k]].end(), i);
+					size_t index = distance(adjlist[visited[k]].begin(), iter);
+					if (index != adjlist[visited[k]].size())
+					{
+
+						int x;
+						int y;
+						if (index == 0)
+						{
+							 x = adjlist[visited[k]].back();
+							 y = adjlist[visited[k]][index+1];
+						}
+						else if (index == adjlist[visited[k]].size() - 1)
+						{
+							 x = adjlist[visited[k]][0];
+							 y = adjlist[visited[k]][index - 1];
+						}
+						else
+						{
+							 x = adjlist[visited[k]][index + 1];
+							 y = adjlist[visited[k]][index - 1];
+						}
+
+						if (find(adjlist[visited[k]].begin(), adjlist[visited[k]].end(), x) != adjlist[visited[k]].end() && find(adjlist[visited[k]].begin(), adjlist[visited[k]].end(), y) != adjlist[visited[k]].end())
+						{
+							triangles.push_back(make_tuple(x, y, i));
+						}
+
+					}
+				}
+
+			}
+		}
+	}
+}
+
+
+
 void subdivision::addEdge(int a, int b)
 {	if (a==b)
 	{
@@ -361,35 +405,10 @@ void subdivision::addpoint(point p)
 	adjlist[p.id] = temp;
 	
 }
-bool tuplecomp(tuple<int, int> e1, tuple<int, int> e2 )
-{
-	int p1 = get<0>(e1); 
-	int p2 = get<1>(e1);
-	int p3 = get<0>(e2); 
-	int p4 = get<1>(e2);
 
-	if( (p1 == p3 && p2 == p4) || (p1 == p4 && p2 == p3) )
-	{
-		return true; 
-	}
-	else
-	{
-		return false;
-	}
-}
-/*
-bool custom(tuple<int, int> e1, tuple<int, int> e2)
-{
-	return p1.coor[0] < p2.coor[0] || (p1.coor[0] == p2.coor[0] && p1.coor[1] < p2.coor[1]);
-}
-*/
 
 void subdivision::killdupedge()
-{	/*
-	vector<pair<int, int>>::iterator it;
-	it = unique (edgelist.begin(), edgelist.end());
-	edgelist.resize(distance(edgelist.begin(), it));
-	*/
+{
 	
 	set< pair<int, int> > temp(edgelist.begin(), edgelist.end());
 	edgelist.assign(temp.begin(), temp.end());
@@ -399,17 +418,77 @@ void subdivision::addEdgepoint(point* a, point* b)
 {
 	addEdge(a -> id, b -> id );
 }
-/*
-bool anglecomp ( int p1, int p2, int center )
-{
 
+bool subdivision::anglecomp ( int p1, int p2, int center )
+{
+	point point1 = *pointid[p1];
+	point point2 = *pointid[p2];
+	point centerp = *pointid[center];
+	point1.coor[0] = point1.coor[0] - centerp.coor[0];
+	point1.coor[1] = point1.coor[1] - centerp.coor[1];
+	point2.coor[0] = point2.coor[0] - centerp.coor[0];
+	point2.coor[1] = point2.coor[1] - centerp.coor[1];
+
+	float angle1 = atan2(point1.coor[1], point1.coor[0]);
+	float angle2 = atan2(point2.coor[1], point2.coor[0]);
+	return (angle1 < angle2);
+	
 }
 
 void subdivision::neighborsort() // for each node, sorts his neighbors in cc order 
 {
+	for (int a = 0; a < s.size(); a++)
+	{
+		int length = adjlist[a].size();
 
+		for (int i = 1; i < length; ++i)
+		{
+			bool inplace = true;
+			int j = 0;
+			for (; j < i; ++j)
+			{
+				if (anglecomp(adjlist[a][j], adjlist[a][j], a))
+				{
+					inplace = false;
+					break;
+				}
+			}
+
+			if (!inplace)
+			{
+				int save = adjlist[a][i];
+				for (int k = i; k > j; --k)
+				{
+					adjlist[a][k] = adjlist[a][k - 1];
+				}
+				adjlist[a][j] = save;
+			}
+		}
+	}
+
+		/*
+		sort(adjlist[i].begin(), adjlist[i].end(), 
+			[pointidlocal, i](const int& p1, const int& p2) -> bool 
+		{
+			point point1 = *(*pointidlocal)[p1];
+			point point2 = *(*pointidlocal)[p2];
+			point centerp = *(*pointidlocal)[i];
+			point1.coor[0] = point1.coor[0] - centerp.coor[0];
+			point1.coor[1] = point1.coor[1] - centerp.coor[1];
+			point2.coor[0] = point2.coor[0] - centerp.coor[0];
+			point2.coor[1] = point2.coor[1] - centerp.coor[1];
+
+			float angle1 = atan2(point1.coor[1], point1.coor[0]);
+			float angle2 = atan2(point2.coor[1], point2.coor[0]);
+			return (angle1 < angle2);
+		}
+			
+			) ; */
+	
 }
-*/
+
+
+
 void subdivision::printalledge()
 {
 	for (int i = 0; i<edgelist.size(); i++)
@@ -428,7 +507,13 @@ void subdivision::printalledge()
 //--------------------------------- entire delaunay program
 edgepair delaunay(subdivision &sub, int begin, int end, bool vertical, bool alternate) //begin = 0, end = length 
 {
-
+if ((end-begin) < 2) 
+{
+	edgepair ep;		
+	ep.le = nullptr;
+	ep.re = nullptr;
+	return ep;
+}
 if ( (end - begin ) == 2 )
 {	
 	if(vertical)
@@ -449,9 +534,9 @@ edgepair ep;
 ep.le = a;
 ep.re = a->Sym();
 //------------------print
-printedge(a);
-cout << "a" << endl;
-sub.addEdgepoint( a-> Org(), a->Dest() );
+//printedge(a);
+//cout << "a" << endl;
+//sub.addEdgepoint( a-> Org(), a->Dest() );
 //------------------print
 return ep;
 }//-----------end of if size = 2
@@ -475,9 +560,9 @@ else if((end - begin ) == 3)
 	b->changedest(&(sub.s[begin+2]));
 	Splice(a->Sym(), b);
 	//------------------------------print
-	printedge(a);
-	printedge(b);
-	cout << "a, b" << endl;
+	//printedge(a);
+	//printedge(b);
+	//cout << "a, b" << endl;
 	sub.addEdgepoint( a-> Org(), a->Dest() );
 	sub.addEdgepoint( b-> Org(), b->Dest() );
 	//------------------------------print
@@ -491,8 +576,8 @@ else if((end - begin ) == 3)
 		ep.re = b -> Sym();
 
 		//---------print
-		printedge(c);
-		cout << "c" << endl;
+		//printedge(c);
+		//cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
 		//---------print
 
@@ -505,8 +590,8 @@ else if((end - begin ) == 3)
 		ep.le = c->Sym();
 		ep.re = c;
 		//-----------------------------
-		printedge(c);
-		cout << "c" << endl;
+		//printedge(c);
+		//cout << "c" << endl;
 		sub.addEdgepoint( c-> Org(), c->Dest() );
 		//-----------------------------
 		return ep;
@@ -629,8 +714,8 @@ else //|S| >= 4--------------------
 	edge* base1 = Connect(rdi -> Sym(), ldi);
 
 	//--------------------------------
-	printedge(base1);
-	cout << "base1-------" << endl; 
+	//printedge(base1);
+	//cout << "base1-------" << endl; 
 	sub.addEdgepoint( base1-> Org(), base1->Dest() );
 	//--------------------------------
 	if ((ldi-> Org() ) == (ldo -> Org())) {ldo = base1 ->Sym();}
@@ -645,8 +730,8 @@ while(true)
 		while( incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, lcand ->Dest() -> coor, (lcand ->Onext()) -> Dest() -> coor  )  > 0 )
 		{
 			edge* t = lcand -> Onext();
-			printedge(t);
-			cout << "DELETED" << endl;
+			//printedge(t);
+			//cout << "DELETED" << endl;
 			DeleteEdge(lcand);
 			lcand = t;
 		}
@@ -657,8 +742,8 @@ while(true)
 		while(incircleexact(base1->Dest() -> coor, base1 ->Org() -> coor, rcand ->Dest() -> coor, rcand ->Oprev() -> Dest() -> coor  )  > 0)
 		{
 			edge* t = rcand -> Oprev();
-			printedge(t);
-			cout << "DELETED" << endl;
+			//printedge(t);
+			//cout << "DELETED" << endl;
 			DeleteEdge(rcand);
 			rcand = t;
 		}
@@ -673,8 +758,8 @@ while(true)
 		base1 = Connect(rcand, base1 -> Sym());
 
 		//----------------------------------
-		printedge(base1);
-		cout << "base1x" << endl;
+		//printedge(base1);
+		//cout << "base1x" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//----------------------------------
 	}
@@ -682,8 +767,8 @@ while(true)
 	{
 		base1 = Connect(base1 -> Sym(), lcand ->Sym());
 		//-----------------------------------
-		printedge(base1);
-		cout << "base1y" << endl;
+		//printedge(base1);
+		//cout << "base1y" << endl;
 		sub.addEdgepoint( base1-> Org(), base1->Dest() );
 		//-------------------------------------
 	}
@@ -693,8 +778,8 @@ while(true)
 	output.le = ldo;
 	output.re = rdo;
 	//------------------------------
-	printep(output);
-	cout << "output" << endl;
+	//printep(output);
+	//cout << "output" << endl;
 	sub.addEdgepoint( ldo-> Org(), ldo->Dest() );
 	sub.addEdgepoint( rdo-> Org(), rdo->Dest() );
 	return output;
@@ -709,7 +794,7 @@ while(true)
 int main()
 {
 string line;
-string filename;
+string filename = "C:\\Users\\songr_000\\OneDrive\\All\\School\\Berkeley\\Spring 2017\\CS 274 - Computational Geo\\Project\\Code\\ttimeu1000000.node";
 subdivision sub; 
 ifstream myfile;
 bool vertical = true;
@@ -717,7 +802,7 @@ bool alternate = false;
 
 cout <<"Name of file? Ex: 4.node" << endl;
 
-
+/*
 bool filebool = false; 
 
 while(!filebool)
@@ -754,9 +839,36 @@ else
 	}
 
 }
+*/
+myfile.open(filename);
+if (myfile.is_open())
+{
+	getline(myfile, line);
+	int N = line[0] - '0';
+
+	while (getline(myfile, line))
+	{
+		istringstream is(line);
+		double id;
+		double x;
+		double y;
+		is >> id;
+		is >> x;
+		is >> y;
+		point p;
+		p.id = id;
+		p.coor[0] = x;
+		p.coor[1] = y;
+		sub.addpoint(p);
+	}
+	myfile.close();
+	//filebool = true;
+}
+
+
 cout << "Vertical or Horizontal? Type 'v' or 'h' respectively." << endl;
 string v; 
-while(v!= "v" and v!= "h")
+while(v!= "v" && v!= "h")
 {
 string v; 
 cin >> v; 
@@ -778,7 +890,7 @@ else
 cout << "Alternate or not? Type 'a' or 'na' respectively." << endl;
 
 string a; 
-while(a!= "a" and v!= "na")
+while(a!= "a" && v!= "na")
 {
 string a; 
 cin >> a; 
@@ -801,7 +913,7 @@ else
 
 
 
-printpoints(sub.s);
+//printpoints(sub.s);
 
 clock_t t= clock();
 // start time!
@@ -809,15 +921,18 @@ edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
 t = clock() - t; 
 float sec = ((float) t)/CLOCKS_PER_SEC;
 cout << sec << endl;
+
 //nanoseconds ms = chrono::duration_cast<nanoseconds>(t2 - t1);
 //cout << ms.count() * MILL_PER_NANO << endl;
 /*
 sub.killdupedge(); //not working????
 cout << sub.edgelist.size() << endl; 
-sub.printalledge();
+//sub.printalledge();
 */
 
 
 
 
 }
+
+
