@@ -11,15 +11,14 @@
 #include <math.h>
 
 #define REAL double
-#define MILL_PER_NANO 0.000001
 
-//using chrono::nanoseconds;
+
 using namespace std;
 typedef chrono::high_resolution_clock Timer;
 
-//extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
-//extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
-
+extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
+extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
+/*
 REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc)
 {
 	REAL acx, bcx, acy, bcy;
@@ -54,6 +53,7 @@ REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
 
 	return alift * bcdet + blift * cadet + clift * abdet;
 }
+*/
 //code for visual studio 
 
 
@@ -123,8 +123,10 @@ public:
 QuadEdge::QuadEdge()
 {
 	e[0].num = 0, e[1].num = 1, e[2].num = 2, e[3].num = 3;
-	e[0].next = &(e[0]); e[1].next = &(e[3]);
-	e[2].next = &(e[2]); e[3].next = &(e[1]);
+	e[0].next = &(e[0]); 
+	e[1].next = &(e[3]);
+	e[2].next = &(e[2]); 
+	e[3].next = &(e[1]);
 
 }
 edge* edge::Rot()
@@ -204,16 +206,14 @@ void Splice(edge* a, edge* b)
 {
 	edge* alpha = (a->Onext()) -> Rot();
 	edge* beta = (b->Onext()) -> Rot();
-
-	edge* t1 = b->Onext();
-	edge* t2 = a-> Onext();
-	edge* t3 = beta -> Onext();
-	edge* t4 = alpha -> Onext();
-
-	a->next = t1;
-	b->next = t2;
-	alpha->next = t3;
-	beta-> next = t4;
+	edge* w = b->Onext();
+	edge* x = a-> Onext();
+	edge* y = beta -> Onext();
+	edge* z = alpha -> Onext();
+	a->next = w;
+	b->next = x;
+	alpha->next = y;
+	beta-> next = z;
 }
 void DeleteEdge(edge* e)
 {
@@ -318,6 +318,7 @@ public:
 	void printalledge();
 	bool anglecomp(int , int , int center);
 	void maketriangle();
+	void masterprint(ofstream);
 private:
 	map< int, point*> pointid; 
 	map< int, vector<int> > adjlist;  
@@ -474,6 +475,24 @@ void subdivision::printalledge()
 }
 
 
+void subdivision::masterprint(ofstream ofile)
+{
+	maketriangle();
+	string begin = triangles.size() + " 3 0\n";
+	ofile << begin;
+	for(int i = 0; i< triangles.size(); i++)
+	{	
+
+		int a,b,c;
+		a = get<0>(triangles[i]);
+		b = get<1>(triangles[i]);
+		c = get<2>(triangles[i]);
+
+		string temp = to_string(i+1) +" " + to_string(a) +" " + to_string(b) + " " + to_string(c);
+		ofile << temp; 
+	}
+
+}
 
 //---- end of subdivision container
 
@@ -769,7 +788,7 @@ while(true)
 int main()
 {
 string line;
-string filename = "C:\\Users\\songr_000\\OneDrive\\All\\School\\Berkeley\\Spring 2017\\CS 274 - Computational Geo\\Project\\Code\\ttimeu1000000.node";
+string filename;
 subdivision sub; 
 ifstream myfile;
 bool vertical = true;
@@ -777,7 +796,7 @@ bool alternate = false;
 
 cout <<"Name of file? Ex: 4.node" << endl;
 
-/*
+
 bool filebool = false; 
 
 while(!filebool)
@@ -813,31 +832,6 @@ else
 		cout <<"Unable to open file. Try again?" << endl;
 	}
 
-}
-*/
-myfile.open(filename);
-if (myfile.is_open())
-{
-	getline(myfile, line);
-	int N = line[0] - '0';
-
-	while (getline(myfile, line))
-	{
-		istringstream is(line);
-		double id;
-		double x;
-		double y;
-		is >> id;
-		is >> x;
-		is >> y;
-		point p;
-		p.id = id;
-		p.coor[0] = x;
-		p.coor[1] = y;
-		sub.addpoint(p);
-	}
-	myfile.close();
-	//filebool = true;
 }
 
 
@@ -888,23 +882,28 @@ else
 
 
 
-//printpoints(sub.s);
+//printpoints(sub.s); // print all points gained.
 
 clock_t t= clock();
 // start time!
 edgepair eppp = delaunay(sub, 0, (sub.s).size(), vertical, alternate);
 t = clock() - t; 
 float sec = ((float) t)/CLOCKS_PER_SEC;
-cout << sec << endl;
+cout << "Time Taken: " +  to_string(sec) + " seconds" << endl;
 
-//nanoseconds ms = chrono::duration_cast<nanoseconds>(t2 - t1);
-//cout << ms.count() * MILL_PER_NANO << endl;
+
+
+
+
 /*
-sub.killdupedge(); //not working????
-cout << sub.edgelist.size() << endl; 
-//sub.printalledge();
+sub.killdupedge(); 
+ofstream ofile; 
+string outname= filename + ".ele"
+ofile.open(outname);
+s.masterprint(ofile);
+ofile.close(); 
 */
-
+//print an ele file.
 
 
 
