@@ -327,6 +327,7 @@ private:
 //------------------------------------
 // algorithm to make a triangluation output will be sort each adjacency list for each vertex, 
 // as we add more vertices, if there is a collision, check consecutive
+
 void subdivision::maketriangle()
 {
 	neighborsort(); 
@@ -340,10 +341,10 @@ void subdivision::maketriangle()
 			{
 				if (adjlist[i][j] == visited[k])
 				{
-					vector<int>::iterator iter = find_if(adjlist[visited[k]].begin(), adjlist[visited[k]].end(), i);
-					size_t index = distance(adjlist[visited[k]].begin(), iter);
-					if (index != adjlist[visited[k]].size())
-					{
+					auto iter = find(adjlist[visited[k]].begin(), adjlist[visited[k]].end(), i);
+					
+					if (iter != adjlist[visited[k]].end())
+					{	auto index = distance(adjlist[visited[k]].begin(), iter);
 
 						int x;
 						int y;
@@ -439,40 +440,13 @@ void subdivision::neighborsort() // for each node, sorts his neighbors in cc ord
 {
 	for (int a = 0; a < s.size(); a++)
 	{
-		int length = adjlist[a].size();
-
-		for (int i = 1; i < length; ++i)
-		{
-			bool inplace = true;
-			int j = 0;
-			for (; j < i; ++j)
-			{
-				if (anglecomp(adjlist[a][j], adjlist[a][j], a))
-				{
-					inplace = false;
-					break;
-				}
-			}
-
-			if (!inplace)
-			{
-				int save = adjlist[a][i];
-				for (int k = i; k > j; --k)
-				{
-					adjlist[a][k] = adjlist[a][k - 1];
-				}
-				adjlist[a][j] = save;
-			}
-		}
-	}
-
-		/*
-		sort(adjlist[i].begin(), adjlist[i].end(), 
-			[pointidlocal, i](const int& p1, const int& p2) -> bool 
+		map<int, point*>* pointidlocal = &pointid;
+		sort(adjlist[a].begin(), adjlist[a].end(), 
+			[pointidlocal, a](const int& p1, const int& p2) -> bool 
 		{
 			point point1 = *(*pointidlocal)[p1];
 			point point2 = *(*pointidlocal)[p2];
-			point centerp = *(*pointidlocal)[i];
+			point centerp = *(*pointidlocal)[a];
 			point1.coor[0] = point1.coor[0] - centerp.coor[0];
 			point1.coor[1] = point1.coor[1] - centerp.coor[1];
 			point2.coor[0] = point2.coor[0] - centerp.coor[0];
@@ -483,7 +457,8 @@ void subdivision::neighborsort() // for each node, sorts his neighbors in cc ord
 			return (angle1 < angle2);
 		}
 			
-			) ; */
+			) ; 
+	}
 	
 }
 
