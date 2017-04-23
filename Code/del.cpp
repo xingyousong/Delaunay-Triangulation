@@ -16,9 +16,9 @@
 using namespace std;
 typedef chrono::high_resolution_clock Timer;
 
-extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
-extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
-/*
+//extern "C" REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc);
+//extern "C" REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd);
+
 REAL orient2dexact(REAL* pa, REAL* pb, REAL* pc)
 {
 	REAL acx, bcx, acy, bcy;
@@ -53,7 +53,7 @@ REAL incircleexact(REAL* pa, REAL* pb, REAL* pc, REAL* pd)
 
 	return alift * bcdet + blift * cadet + clift * abdet;
 }
-*/
+
 //code for visual studio 
 
 
@@ -88,22 +88,18 @@ private:
 public:
 	edge() {data = 0;}
 	edge* Rot();
-	edge* invRot();
+	edge* Rotinv();
 	edge* Sym();
-
 	edge* Onext();
 	edge* Oprev();
-	edge* Dnext();
-	edge* Dprev();
 	edge* Lnext();
 	edge* Lprev();
 	edge* Rnext();
 	edge* Rprev();
-
 	point* Org();
 	point* Dest();
 	void EndPoints(point*, point*);
-	QuadEdge* Qedge() {return (QuadEdge*)(this-num);}
+	QuadEdge* Qedge();
 	void changeorg(point*);
 	void changedest(point*);
 
@@ -129,17 +125,20 @@ QuadEdge::QuadEdge()
 	e[3].next = &(e[1]);
 
 }
-edge* edge::Rot()
-{
-	return (num<3)? this +1 : this -3;
-}
-edge* edge::invRot()
-{
-	return (num >0)? this -1: this +3;
+QuadEdge* edge::Qedge(){
+	 return (QuadEdge*)(this - num); 
 }
 edge* edge::Sym()
 {
 	return (num <2) ? this +2 : this - 2;
+}
+edge* edge::Rot()
+{
+	return (num<3) ? this + 1 : this - 3;
+}
+edge* edge::Rotinv()
+{
+	return (num >0) ? this - 1 : this + 3;
 }
 edge* edge::Onext()
 {
@@ -149,17 +148,10 @@ edge* edge::Oprev()
 {
 	return (Rot() -> Onext()) -> Rot();
 }
-edge* edge::Dnext()
-{
-	return (Sym() -> Onext()) -> Sym();
-}
-edge* edge::Dprev()
-{
-	return (invRot() -> Onext()) -> invRot();
-}
+
 edge* edge::Lnext()
 {
-	return (invRot() -> Onext()) -> Rot();
+	return (Rotinv() -> Onext()) -> Rot();
 }
 edge* edge::Lprev()
 {
@@ -167,15 +159,15 @@ edge* edge::Lprev()
 }
 edge* edge::Rnext()
 {
-	return (Rot() -> Onext()) -> invRot();
+	return (Rot() -> Onext()) -> Rotinv();
 }
 edge* edge::Rprev()
 {
 	return Sym() -> Onext();
 }
-void edge::EndPoints(point* origin, point* de)
+void edge::EndPoints(point* ori, point* de)
 {
-	data = origin;
+	data = ori;
 	(Sym() -> data) = de;
 }
 point* edge::Org()
@@ -210,16 +202,18 @@ void Splice(edge* a, edge* b)
 	edge* x = a-> Onext();
 	edge* y = beta -> Onext();
 	edge* z = alpha -> Onext();
-	a->next = w;
-	b->next = x;
-	alpha->next = y;
-	beta-> next = z;
+
+	a->next = b->Onext();
+	b->next = a->Onext();
+	alpha->next = beta->Onext();
+	beta ->next = alpha->Onext();
+
 }
 void DeleteEdge(edge* e)
 {
 	Splice(e, e->Oprev());
 	Splice(e->Sym(), (e-> Sym())->Oprev());
-	if (e->Onext() == e && e->Sym()->Onext() == e->Sym() && e->Rot()->Onext() == e->invRot() && e->invRot()->Onext() == e->Rot())
+	if (e->Onext() == e && e->Sym()->Onext() == e->Sym() && e->Rot()->Onext() == e->Rotinv() && e->Rotinv()->Onext() == e->Rot())
 	{
 		delete e->Qedge();
 	}
